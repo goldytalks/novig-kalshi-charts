@@ -37,8 +37,8 @@ def load_logo(target_height: int = 108) -> Optional[np.ndarray]:
         return None
     
     try:
-        # Render at 3x target size for maximum quality, then scale down
-        render_height = target_height * 3
+        # Render at 4x target size for maximum quality, then scale down
+        render_height = target_height * 4
         
         png_data = cairosvg.svg2png(
             url=str(LOGO_SVG_PATH),
@@ -319,8 +319,8 @@ class BarRaceAnimator:
 
         # Novig logo - bottom left corner, smaller and within bottom section
         if self.logo is not None:
-            # Use antialiased interpolation for smooth edges
-            logo_img = OffsetImage(self.logo, zoom=1.0, interpolation='antialiased')
+            # Use lanczos interpolation for sharp, crisp edges
+            logo_img = OffsetImage(self.logo, zoom=1.0, interpolation='lanczos')
             # Position lower in bottom section to ensure no overlap with chart (chart starts at y=0.20)
             ab = AnnotationBbox(
                 logo_img, (0.04, 0.08),
