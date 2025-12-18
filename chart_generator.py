@@ -37,33 +37,19 @@ def load_logo(target_height: int = 108) -> Optional[np.ndarray]:
         return None
     
     try:
-        # Render at 2x target size for quality, then scale down
-        render_height = target_height * 2
-        
-        # Convert SVG to PNG in memory using cairosvg
+        # Render directly at target size - cairosvg produces clean vector output
         png_data = cairosvg.svg2png(
             url=str(LOGO_SVG_PATH),
-            output_height=render_height
+            output_height=target_height
         )
         
         img = Image.open(io.BytesIO(png_data)).convert('RGBA')
-        
-        # Scale down to target size using high-quality LANCZOS resampling
-        aspect = img.width / img.height
-        target_width = int(target_height * aspect)
-        img = img.resize((target_width, target_height), Image.LANCZOS)
-        
         img_array = np.array(img)
         
-        # Keep the original alpha channel for smooth anti-aliased edges
-        # Just ensure RGB is pure white where there's any alpha
-        alpha = img_array[:, :, 3]
-        
-        # Set RGB to white, preserving original smooth alpha for anti-aliasing
+        # Set RGB to pure white, keep smooth alpha for anti-aliasing
         img_array[:, :, 0] = 255
         img_array[:, :, 1] = 255
         img_array[:, :, 2] = 255
-        # Keep original alpha - don't threshold it!
         
         return img_array
         
@@ -147,9 +133,9 @@ class BarRaceAnimator:
         self.prev_positions = {c: i for i, c in enumerate(self.candidates)}
 
         self.font_prop = load_font()
-        # Load logo at higher resolution for crisp rendering
-        # Use 12% of chart height for good visibility
-        logo_target_height = int(self.height * 0.12)
+        # Load logo at good size for visibility
+        # Use 14% of chart height
+        logo_target_height = int(self.height * 0.14)
         self.logo = load_logo(target_height=logo_target_height)
 
     def _get_sorted_candidates(self, frame_data: Dict[str, float]) -> List[Tuple[str, float]]:
@@ -204,11 +190,11 @@ class BarRaceAnimator:
         ax.set_xticks([])
         ax.set_yticks([])
 
-        # Title - CENTERED, BOLD
+        # Title - CENTERED, BOLD, LARGE
         ax.text(0.5, 0.92, self.title,
                ha='center', va='center',
                color=COLORS['text_white'],
-               fontsize=32, fontweight='bold',
+               fontsize=42, fontweight='bold',
                fontproperties=self.font_prop,
                transform=ax.transAxes, zorder=10)
 
@@ -301,16 +287,16 @@ class BarRaceAnimator:
                    fontproperties=self.font_prop,
                    transform=ax.transAxes, zorder=5)
 
-        # Timestamp - BIGGER, BOLD, centered at bottom
+        # Timestamp - LARGE, BOLD, centered at bottom
         if isinstance(timestamp, pd.Timestamp):
             ts_str = timestamp.strftime("%B %d, %Y").upper()
         else:
             ts_str = str(timestamp).upper()
 
-        ax.text(0.5, 0.04, ts_str,
+        ax.text(0.5, 0.05, ts_str,
                ha='center', va='center',
                color=COLORS['text_gray'],
-               fontsize=16, fontweight='bold',
+               fontsize=24, fontweight='bold',
                fontproperties=self.font_prop,
                transform=ax.transAxes, zorder=10)
 
@@ -446,3 +432,4 @@ def create_multi_market_chart(
         show_gridlines=show_gridlines
     )
     return animator.animate(output)
+
