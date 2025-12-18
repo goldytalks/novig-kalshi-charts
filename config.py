@@ -16,7 +16,7 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 # Asset paths
 DHARMA_FONT_PATH = ASSETS_DIR / "DharmaGothicE-ExBold.ttf"
 LOGO_PNG_PATH = ASSETS_DIR / "novig_n_color.png"
-LOGO_SVG_PATH = ASSETS_DIR / "novig_logo.svg"
+LOGO_SVG_PATH = ASSETS_DIR / "novig_n_with_padding.svg"
 
 # Novig brand colors
 NOVIG_STYLE = {

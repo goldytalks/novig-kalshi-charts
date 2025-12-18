@@ -14,8 +14,7 @@ from PIL import Image
 from pathlib import Path
 from typing import Optional, List, Tuple, Dict
 import io
-import subprocess
-import tempfile
+import cairosvg
 
 from config import CHART_CONFIG, VIDEO_CONFIG, DHARMA_FONT_PATH, LOGO_SVG_PATH
 
@@ -33,88 +32,47 @@ def load_font() -> FontProperties:
 
 
 def load_logo(target_height: int = 108) -> Optional[np.ndarray]:
-    """Load Novig logo from SVG at HIGH RESOLUTION for crisp display."""
-    if LOGO_SVG_PATH.exists():
-        try:
-            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
-                tmp_path = tmp.name
-            
-            # Render at 4x target size for maximum quality, then scale down
-            render_height = target_height * 4
-            
-            try:
-                result = subprocess.run(
-                    ['rsvg-convert', 
-                     f'--height={render_height}',
-                     '--background-color=transparent',
-                     str(LOGO_SVG_PATH), 
-                     '-o', tmp_path],
-                    capture_output=True, check=True
-                )
-                img = Image.open(tmp_path).convert('RGBA')
-                Path(tmp_path).unlink()  # Clean up
-                
-                # Scale down to target size using high-quality LANCZOS resampling
-                aspect = img.width / img.height
-                target_width = int(target_height * aspect)
-                img = img.resize((target_width, target_height), Image.LANCZOS)
-                
-                img_array = np.array(img)
-                
-                # Force pure white RGB, threshold alpha for crisp edges
-                alpha = img_array[:, :, 3]
-                # Use a higher threshold to get sharper edges
-                mask = alpha > 100
-                
-                # Pure white RGB
-                img_array[:, :, 0] = 255
-                img_array[:, :, 1] = 255
-                img_array[:, :, 2] = 255
-                
-                # Binary alpha - fully opaque or fully transparent
-                img_array[:, :, 3] = np.where(mask, 255, 0)
-                
-                return img_array
-            except (subprocess.CalledProcessError, FileNotFoundError):
-                pass
-            
-            print("SVG converter not available, using fallback logo")
-            return _create_fallback_logo()
-            
-        except Exception as e:
-            print(f"Error loading SVG logo: {e}")
-            return _create_fallback_logo()
-    return None
-
-
-def _create_fallback_logo() -> np.ndarray:
-    """Create a simple white Novig N logo as fallback."""
-    # Create a 300x300 transparent image with white N
-    size = 300
-    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    """Load Novig logo from SVG using cairosvg for crisp display."""
+    if not LOGO_SVG_PATH.exists():
+        return None
     
-    # Draw a simple stylized N using PIL
-    from PIL import ImageDraw
-    draw = ImageDraw.Draw(img)
-    
-    # Draw a simple N shape in white
-    margin = 30
-    width = 60
-    
-    # Left vertical bar
-    draw.rectangle([margin, margin, margin + width, size - margin], fill=(255, 255, 255, 255))
-    # Right vertical bar  
-    draw.rectangle([size - margin - width, margin, size - margin, size - margin], fill=(255, 255, 255, 255))
-    # Diagonal
-    points = [
-        (margin, margin),
-        (margin + width, margin),
-        (size - margin, size - margin),
-        (size - margin - width, size - margin)
-    ]
-    draw.polygon(points, fill=(255, 255, 255, 255))
-    
-    return np.array(img)
+    try:
+        # Render at 4x target size for maximum quality, then scale down
+        render_height = target_height * 4
+        
+        # Convert SVG to PNG in memory using cairosvg
+        png_data = cairosvg.svg2png(
+            url=str(LOGO_SVG_PATH),
+            output_height=render_height
+        )
+        
+        img = Image.open(io.BytesIO(png_data)).convert('RGBA')
+        
+        # Scale down to target size using high-quality LANCZOS resampling
+        aspect = img.width / img.height
+        target_width = int(target_height * aspect)
+        img = img.resize((target_width, target_height), Image.LANCZOS)
+        
+        img_array = np.array(img)
+        
+        # Force pure white RGB, threshold alpha for crisp edges
+        alpha = img_array[:, :, 3]
+        # Use a higher threshold to get sharper edges
+        mask = alpha > 100
+        
+        # Pure white RGB
+        img_array[:, :, 0] = 255
+        img_array[:, :, 1] = 255
+        img_array[:, :, 2] = 255
+        
+        # Binary alpha - fully opaque or fully transparent
+        img_array[:, :, 3] = np.where(mask, 255, 0)
+        
+        return img_array
+        
+    except Exception as e:
+        print(f"Error loading SVG logo: {e}")
+        return None
 
 
 def interpolate_dataframe(df: pd.DataFrame, n_frames: int) -> Tuple[List[Dict], List]:
