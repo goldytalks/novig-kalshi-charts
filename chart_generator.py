@@ -133,9 +133,9 @@ class BarRaceAnimator:
         self.prev_positions = {c: i for i, c in enumerate(self.candidates)}
 
         self.font_prop = load_font()
-        # Load logo at good size for visibility
-        # Use 14% of chart height
-        logo_target_height = int(self.height * 0.14)
+        # Load logo at smaller size to fit in bottom section
+        # Use 8% of chart height
+        logo_target_height = int(self.height * 0.08)
         self.logo = load_logo(target_height=logo_target_height)
 
     def _get_sorted_candidates(self, frame_data: Dict[str, float]) -> List[Tuple[str, float]]:
@@ -309,13 +309,13 @@ class BarRaceAnimator:
                alpha=1.0,
                transform=ax.transAxes, zorder=10)
 
-        # Novig logo - bottom left corner
+        # Novig logo - bottom left corner, smaller and within bottom section
         if self.logo is not None:
             # Use antialiased interpolation for smooth edges
             logo_img = OffsetImage(self.logo, zoom=1.0, interpolation='antialiased')
-            # Position with proper padding from edges
+            # Position lower in bottom section to ensure no overlap with chart (chart starts at y=0.20)
             ab = AnnotationBbox(
-                logo_img, (0.04, 0.10),
+                logo_img, (0.04, 0.08),
                 xycoords='axes fraction',
                 frameon=False,
                 box_alignment=(0, 0),  # Anchor from bottom-left
