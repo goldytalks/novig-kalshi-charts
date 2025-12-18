@@ -37,13 +37,21 @@ def load_logo(target_height: int = 108) -> Optional[np.ndarray]:
         return None
     
     try:
-        # Render directly at target size - cairosvg produces clean vector output
+        # Render at 3x target size for maximum quality, then scale down
+        render_height = target_height * 3
+        
         png_data = cairosvg.svg2png(
             url=str(LOGO_SVG_PATH),
-            output_height=target_height
+            output_height=render_height
         )
         
         img = Image.open(io.BytesIO(png_data)).convert('RGBA')
+        
+        # Scale down to target size using high-quality LANCZOS resampling
+        aspect = img.width / img.height
+        target_width = int(target_height * aspect)
+        img = img.resize((target_width, target_height), Image.LANCZOS)
+        
         img_array = np.array(img)
         
         # Set RGB to pure white, keep smooth alpha for anti-aliasing
@@ -133,9 +141,9 @@ class BarRaceAnimator:
         self.prev_positions = {c: i for i, c in enumerate(self.candidates)}
 
         self.font_prop = load_font()
-        # Load logo at smaller size to fit in bottom section, well below chart
-        # Use 6% of chart height to ensure it stays below chart area (chart ends at y=0.20)
-        logo_target_height = int(self.height * 0.06)
+        # Load logo at good size for visibility
+        # Use 8% of chart height
+        logo_target_height = int(self.height * 0.08)
         self.logo = load_logo(target_height=logo_target_height)
 
     def _get_sorted_candidates(self, frame_data: Dict[str, float]) -> List[Tuple[str, float]]:
@@ -309,14 +317,13 @@ class BarRaceAnimator:
                alpha=1.0,
                transform=ax.transAxes, zorder=10)
 
-        # Novig logo - bottom left corner, BELOW the chart area
+        # Novig logo - bottom left corner, smaller and within bottom section
         if self.logo is not None:
             # Use antialiased interpolation for smooth edges
             logo_img = OffsetImage(self.logo, zoom=1.0, interpolation='antialiased')
-            # Position at very bottom of bottom section (chart ends at y=0.20, bottom section is 0.0-0.18)
-            # Place logo at y=0.03 to ensure it's well below chart and within bottom section
+            # Position lower in bottom section to ensure no overlap with chart (chart starts at y=0.20)
             ab = AnnotationBbox(
-                logo_img, (0.04, 0.03),
+                logo_img, (0.04, 0.08),
                 xycoords='axes fraction',
                 frameon=False,
                 box_alignment=(0, 0),  # Anchor from bottom-left
