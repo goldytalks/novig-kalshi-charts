@@ -179,8 +179,8 @@ class BarRaceAnimator:
         bar_end_x = 0.82
         pct_x = 0.84
         
-        chart_top = 0.80
-        chart_bottom = 0.15
+        chart_top = 0.85
+        chart_bottom = 0.20
         chart_height = chart_top - chart_bottom
         bar_height = min(0.06, chart_height / n_bars * 0.8)
         bar_spacing = chart_height / max(n_bars, 1)
@@ -293,20 +293,20 @@ class BarRaceAnimator:
         else:
             ts_str = str(timestamp).upper()
 
-        ax.text(0.5, 0.05, ts_str,
+        ax.text(0.5, 0.12, ts_str,
                ha='center', va='center',
                color=COLORS['text_gray'],
-               fontsize=24, fontweight='bold',
+               fontsize=32, fontweight='bold',
                fontproperties=self.font_prop,
                transform=ax.transAxes, zorder=10)
 
         # Attribution text - bottom center below date
-        ax.text(0.5, 0.015, "PER NOVIG MARKET DATA",
+        ax.text(0.5, 0.06, "PER NOVIG MARKET DATA",
                ha='center', va='center',
                color=COLORS['text_gray'],
-               fontsize=10, fontweight='normal',
+               fontsize=20, fontweight='normal',
                fontproperties=self.font_prop,
-               alpha=0.7,
+               alpha=1.0,
                transform=ax.transAxes, zorder=10)
 
         # Novig logo - bottom left corner
@@ -315,7 +315,7 @@ class BarRaceAnimator:
             logo_img = OffsetImage(self.logo, zoom=1.0, interpolation='antialiased')
             # Position with proper padding from edges
             ab = AnnotationBbox(
-                logo_img, (0.04, 0.04),
+                logo_img, (0.04, 0.10),
                 xycoords='axes fraction',
                 frameon=False,
                 box_alignment=(0, 0),  # Anchor from bottom-left
