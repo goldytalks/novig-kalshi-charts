@@ -37,8 +37,8 @@ def load_logo(target_height: int = 108) -> Optional[np.ndarray]:
         return None
     
     try:
-        # Render at 4x target size for maximum quality, then scale down
-        render_height = target_height * 4
+        # Render at 2x target size for quality, then scale down
+        render_height = target_height * 2
         
         # Convert SVG to PNG in memory using cairosvg
         png_data = cairosvg.svg2png(
@@ -55,18 +55,15 @@ def load_logo(target_height: int = 108) -> Optional[np.ndarray]:
         
         img_array = np.array(img)
         
-        # Force pure white RGB, threshold alpha for crisp edges
+        # Keep the original alpha channel for smooth anti-aliased edges
+        # Just ensure RGB is pure white where there's any alpha
         alpha = img_array[:, :, 3]
-        # Use a higher threshold to get sharper edges
-        mask = alpha > 100
         
-        # Pure white RGB
+        # Set RGB to white, preserving original smooth alpha for anti-aliasing
         img_array[:, :, 0] = 255
         img_array[:, :, 1] = 255
         img_array[:, :, 2] = 255
-        
-        # Binary alpha - fully opaque or fully transparent
-        img_array[:, :, 3] = np.where(mask, 255, 0)
+        # Keep original alpha - don't threshold it!
         
         return img_array
         
@@ -326,10 +323,10 @@ class BarRaceAnimator:
                alpha=0.7,
                transform=ax.transAxes, zorder=10)
 
-        # Novig logo - bottom left corner, CRISP with no blur
+        # Novig logo - bottom left corner
         if self.logo is not None:
-            # Use nearest-neighbor interpolation to keep edges sharp
-            logo_img = OffsetImage(self.logo, zoom=1.0, interpolation='nearest')
+            # Use antialiased interpolation for smooth edges
+            logo_img = OffsetImage(self.logo, zoom=1.0, interpolation='antialiased')
             # Position with proper padding from edges
             ab = AnnotationBbox(
                 logo_img, (0.04, 0.04),
